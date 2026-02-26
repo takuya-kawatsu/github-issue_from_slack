@@ -11,6 +11,9 @@ class Config:
     github_repo: str
     gcp_project_id: str
     gcp_location: str = "asia-northeast1"
+    gemini_model: str = "gemini-2.5-pro"
+    context_gcs_bucket: str = ""
+    context_gcs_path: str = "llm_context.md"
 
 
 @lru_cache(maxsize=1)
@@ -22,4 +25,7 @@ def get_config() -> Config:
         github_repo=os.environ["GITHUB_REPO"],
         gcp_project_id=os.environ["GCP_PROJECT_ID"],
         gcp_location=os.environ.get("GCP_LOCATION", "asia-northeast1"),
+        gemini_model=os.environ.get("GEMINI_MODEL", "gemini-2.5-pro"),
+        context_gcs_bucket=os.environ.get("CONTEXT_GCS_BUCKET", ""),
+        context_gcs_path=os.environ.get("CONTEXT_GCS_PATH", "llm_context.md"),
     )
