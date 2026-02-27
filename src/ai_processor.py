@@ -77,11 +77,7 @@ def _load_codebase_context() -> str:
 
 def structurize(text: str) -> StructuredIssue:
     config = get_config()
-    client = genai.Client(
-        vertexai=True,
-        project=config.gcp_project_id,
-        location=config.gcp_location,
-    )
+    client = genai.Client(api_key=config.gemini_api_key)
 
     codebase_context = _load_codebase_context()
 

@@ -11,8 +11,8 @@ def test_structurize_returns_structured_issue(
     mock_client_cls, mock_config, mock_load_context
 ):
     mock_config.return_value = MagicMock(
+        gemini_api_key="test-api-key",
         gcp_project_id="test-project",
-        gcp_location="asia-northeast1",
         gemini_model="gemini-2.5-pro",
     )
     mock_load_context.return_value = "# Codebase\nsome context"
@@ -43,8 +43,8 @@ def test_structurize_returns_structured_issue(
 @patch("src.ai_processor.genai.Client")
 def test_structurize_with_empty_labels(mock_client_cls, mock_config, mock_load_context):
     mock_config.return_value = MagicMock(
+        gemini_api_key="test-api-key",
         gcp_project_id="test-project",
-        gcp_location="asia-northeast1",
         gemini_model="gemini-2.5-pro",
     )
     mock_load_context.return_value = ""
@@ -71,8 +71,8 @@ def test_structurize_without_context_sends_text_directly(
     mock_client_cls, mock_config, mock_load_context
 ):
     mock_config.return_value = MagicMock(
+        gemini_api_key="test-api-key",
         gcp_project_id="test-project",
-        gcp_location="asia-northeast1",
         gemini_model="gemini-2.5-pro",
     )
     mock_load_context.return_value = ""
@@ -101,8 +101,8 @@ def test_structurize_with_context_sends_parts(
     mock_client_cls, mock_config, mock_load_context
 ):
     mock_config.return_value = MagicMock(
+        gemini_api_key="test-api-key",
         gcp_project_id="test-project",
-        gcp_location="asia-northeast1",
         gemini_model="gemini-2.5-pro",
     )
     mock_load_context.return_value = "# Codebase\nsome context"
