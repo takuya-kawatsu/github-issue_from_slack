@@ -67,6 +67,10 @@ class TestBuildPreviewBlocks:
         body_text = blocks[2]["text"]["text"]
         assert len(body_text) <= 3000
 
+    def test_no_mention_block_in_preview(self):
+        blocks = _build_preview_blocks("T", "B", [])
+        assert blocks[0]["type"] == "header"
+
 
 # --- _build_result_blocks ---
 

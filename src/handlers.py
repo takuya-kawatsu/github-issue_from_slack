@@ -145,6 +145,14 @@ def register_handlers(app: App) -> None:
                 blocks=blocks,
                 metadata=metadata,
             )
+
+            config = get_config()
+            if config.approver_slack_group:
+                say(
+                    text=f"<!subteam^{config.approver_slack_group}> Issue の提案がありました。レビューしてください",
+                    channel=channel,
+                    thread_ts=thread_ts,
+                )
         except Exception:
             logger.exception("Failed to structurize issue")
             say(
