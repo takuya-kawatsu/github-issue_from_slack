@@ -14,6 +14,7 @@ class Config:
     gemini_model: str = "gemini-2.5-pro"
     context_gcs_bucket: str = ""
     context_gcs_path: str = "llm_context.md"
+    approver_slack_group: str = ""
 
 
 @lru_cache(maxsize=1)
@@ -28,4 +29,5 @@ def get_config() -> Config:
         gemini_model=os.environ.get("GEMINI_MODEL", "gemini-2.5-pro"),
         context_gcs_bucket=os.environ.get("CONTEXT_GCS_BUCKET", ""),
         context_gcs_path=os.environ.get("CONTEXT_GCS_PATH", "llm_context.md"),
+        approver_slack_group=os.environ.get("APPROVER_SLACK_GROUP", ""),
     )

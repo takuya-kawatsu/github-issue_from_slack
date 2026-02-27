@@ -9,8 +9,10 @@ Slack (メンション)
   → Cloud Functions (HTTP)
     → GCS からコードベースコンテキスト取得（キャッシュ付き）
     → Vertex AI (Gemini 2.5 Pro) でテキスト構造化
-    → GitHub API で Issue 作成
-    → Slack に結果を投稿
+    → Slack にプレビュー表示（Block Kit + metadata）
+    → 承認者が「作成」ボタン押下
+      → GitHub API で Issue 作成
+      → Slack に結果を投稿
 ```
 
 ## 前提条件
@@ -82,6 +84,8 @@ gcloud services enable aiplatform.googleapis.com
 2. **Scopes** → **Bot Token Scopes** に以下を追加:
    - `app_mentions:read` — メンションの読み取り
    - `chat:write` — メッセージの送信
+   - `metadata.message:read` — メッセージ metadata の読み取り
+   - `usergroups:read` — 承認者グループのメンバー取得（承認者機能使用時）
 3. ページ上部の **Install to Workspace** をクリック
 4. 表示される **Bot User OAuth Token** (`xoxb-...`) を控えておく
 
@@ -90,7 +94,7 @@ gcloud services enable aiplatform.googleapis.com
 1. 左メニュー **Basic Information** を開く
 2. **App Credentials** → **Signing Secret** の値を控えておく
 
-> **注意**: Event Subscriptions の設定は、Cloud Functions のデプロイ後に行います（Step 7）。
+> **注意**: Event Subscriptions、Interactivity、App Manifest の設定は、Cloud Functions のデプロイ後に行います（Step 9〜11）。
 
 ### Step 6: Secret Manager にシークレットを登録
 
@@ -173,7 +177,29 @@ gcloud functions describe issue-bot \
 5. **Subscribe to bot events** → **Add Bot User Event** で `app_mention` を追加
 6. **Save Changes** をクリック
 
-### Step 10: 動作確認
+### Step 10: Interactivity の有効化
+
+1. [Slack API](https://api.slack.com/apps) → 対象アプリ → 左メニュー **Interactivity & Shortcuts**
+2. **Interactivity** を **ON** に切り替え
+3. **Request URL** に Step 8 で取得した Cloud Functions の URL を入力（Event Subscriptions と同じ URL）
+4. **Save Changes** をクリック
+
+> **注意**: Interactivity はプレビューボタン（作成 / キャンセル）の操作に必要です。
+
+### Step 11: App Manifest に metadata event type を登録
+
+Bot がメッセージに付与する metadata をアクション payload で受け取るために、App Manifest に event type を登録します。
+
+1. [Slack API](https://api.slack.com/apps) → 対象アプリ → 左メニュー **App Manifest**
+2. `metadata` セクションに以下を追加:
+   ```yaml
+   metadata:
+     event_subscriptions:
+       - event_type: issue_preview
+   ```
+3. **Save Changes** をクリック
+
+### Step 12: 動作確認
 
 1. Slack の任意のチャンネルに Bot を招待:
    ```
@@ -185,7 +211,9 @@ gcloud functions describe issue-bot \
    @YourBotName ログイン画面で500エラーが発生する。再現手順: 1. ログインページを開く 2. メールアドレスを入力 3. 送信ボタンを押す
    ```
 
-3. Bot が「Issue を作成中...」と応答し、数秒後に作成された Issue のリンクが返信されれば成功です。
+3. Bot が「Issue を構造化中...」と応答し、数秒後にプレビューが表示されます。
+4. プレビューを確認し、「作成」ボタンを押すと Issue が作成されます。「キャンセル」ボタンで取り消せます。
+5. `APPROVER_SLACK_GROUP` を設定している場合、グループメンバーのみがボタン操作可能です。
 
 ## ローカル開発
 
@@ -231,6 +259,7 @@ pytest tests/ -v
 | `GEMINI_MODEL` | 使用する Gemini モデル (デフォルト: `gemini-2.5-pro`) | No |
 | `CONTEXT_GCS_BUCKET` | コードベースコンテキストが格納された GCS バケット名 | No |
 | `CONTEXT_GCS_PATH` | GCS バケット内のコンテキストファイルパス (デフォルト: `llm_context.md`) | No |
+| `APPROVER_SLACK_GROUP` | Issue 作成を承認できる Slack ユーザーグループ ID (`S...`)。未設定時は全員が操作可能 | No |
 
 ## プロジェクト構成
 
