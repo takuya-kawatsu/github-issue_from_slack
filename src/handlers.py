@@ -130,6 +130,42 @@ def _build_result_blocks(text: str) -> list[dict]:
     ]
 
 
+def _build_created_blocks(
+    title: str, body: str, labels: list[str], issue_url: str
+) -> list[dict]:
+    label_text = ", ".join(f"`{label}`" for label in labels) if labels else "なし"
+    return [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": ":white_check_mark: Issue を作成しました",
+                "emoji": True,
+            },
+        },
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": f"*タイトル*\n{title}"},
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": _truncate(f"*本文*\n{body}", PREVIEW_BODY_LIMIT),
+            },
+        },
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": f"*ラベル*: {label_text}"},
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": f":link: <{issue_url}|GitHub で確認する>"},
+        },
+    ]
+
+
 def _is_approver(client: WebClient, user_id: str) -> bool:
     config = get_config()
     group_id = config.approver_slack_group
@@ -261,8 +297,8 @@ def register_handlers(app: App) -> None:
                 channel=channel,
                 ts=message_ts,
                 text=f"Issue を作成しました! {issue_url}",
-                blocks=_build_result_blocks(
-                    f":white_check_mark: Issue を作成しました!\n<{issue_url}>"
+                blocks=_build_created_blocks(
+                    issue.title, issue.body, issue.labels, issue_url
                 ),
             )
 

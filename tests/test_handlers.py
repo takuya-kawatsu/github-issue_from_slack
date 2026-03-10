@@ -5,6 +5,7 @@ from slack_sdk.errors import SlackApiError
 from src.handlers import (
     FIRESTORE_COLLECTION,
     MENTION_PATTERN,
+    _build_created_blocks,
     _build_preview_blocks,
     _build_result_blocks,
     _delete_issue_data,
@@ -180,6 +181,60 @@ class TestBuildPreviewBlocks:
     def test_no_mention_block_in_preview(self, mock_save):
         blocks = _build_preview_blocks("T", "B", [])
         assert blocks[0]["type"] == "header"
+
+
+# --- _build_created_blocks ---
+
+
+class TestBuildCreatedBlocks:
+    def test_block_structure(self):
+        blocks = _build_created_blocks(
+            "Title", "Body", ["bug"], "https://github.com/o/r/issues/1"
+        )
+        assert blocks[0]["type"] == "header"
+        assert blocks[1]["type"] == "section"
+        assert blocks[2]["type"] == "section"
+        assert blocks[3]["type"] == "section"
+        assert blocks[4]["type"] == "divider"
+        assert blocks[5]["type"] == "section"
+
+    def test_header_text(self):
+        blocks = _build_created_blocks("T", "B", [], "https://example.com")
+        assert "作成しました" in blocks[0]["text"]["text"]
+
+    def test_title_displayed(self):
+        blocks = _build_created_blocks("My Title", "B", [], "https://example.com")
+        assert "My Title" in blocks[1]["text"]["text"]
+
+    def test_body_displayed(self):
+        blocks = _build_created_blocks("T", "Issue body", [], "https://example.com")
+        assert "Issue body" in blocks[2]["text"]["text"]
+
+    def test_labels_displayed(self):
+        blocks = _build_created_blocks(
+            "T", "B", ["bug", "enhancement"], "https://example.com"
+        )
+        assert "`bug`" in blocks[3]["text"]["text"]
+        assert "`enhancement`" in blocks[3]["text"]["text"]
+
+    def test_labels_empty(self):
+        blocks = _build_created_blocks("T", "B", [], "https://example.com")
+        assert "なし" in blocks[3]["text"]["text"]
+
+    def test_github_link(self):
+        url = "https://github.com/o/r/issues/42"
+        blocks = _build_created_blocks("T", "B", [], url)
+        assert url in blocks[5]["text"]["text"]
+
+    def test_long_body_truncated(self):
+        long_body = "x" * 4000
+        blocks = _build_created_blocks("T", long_body, [], "https://example.com")
+        assert len(blocks[2]["text"]["text"]) <= 3000
+
+    def test_no_action_buttons(self):
+        blocks = _build_created_blocks("T", "B", [], "https://example.com")
+        for block in blocks:
+            assert block["type"] != "actions"
 
 
 # --- _build_result_blocks ---
