@@ -1,11 +1,13 @@
 import json
 import logging
+import time
 from dataclasses import dataclass
 from functools import lru_cache
 
 from google import genai
 from google.cloud import storage
 from google.genai import types
+from google.genai.errors import ServerError
 
 from src.config import get_config
 
@@ -75,9 +77,17 @@ def _load_codebase_context() -> str:
     return content
 
 
+_MAX_RETRIES = 3
+_INITIAL_BACKOFF_SEC = 5
+_HTTP_TIMEOUT_MS = 600_000  # 10 minutes
+
+
 def structurize(text: str) -> StructuredIssue:
     config = get_config()
-    client = genai.Client(api_key=config.gemini_api_key)
+    client = genai.Client(
+        api_key=config.gemini_api_key,
+        http_options=types.HttpOptions(timeout=_HTTP_TIMEOUT_MS),
+    )
 
     codebase_context = _load_codebase_context()
 
@@ -89,17 +99,35 @@ def structurize(text: str) -> StructuredIssue:
     else:
         contents = text
 
-    response = client.models.generate_content(
-        model=config.gemini_model,
-        contents=contents,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            temperature=0.2,
-            max_output_tokens=8192,
-            response_mime_type="application/json",
-            response_schema=RESPONSE_SCHEMA,
-        ),
+    generate_config = types.GenerateContentConfig(
+        system_instruction=SYSTEM_PROMPT,
+        temperature=0.2,
+        max_output_tokens=8192,
+        response_mime_type="application/json",
+        response_schema=RESPONSE_SCHEMA,
     )
+
+    last_error: Exception | None = None
+    for attempt in range(_MAX_RETRIES):
+        try:
+            response = client.models.generate_content(
+                model=config.gemini_model,
+                contents=contents,
+                config=generate_config,
+            )
+            break
+        except ServerError as exc:
+            last_error = exc
+            if attempt < _MAX_RETRIES - 1:
+                wait = _INITIAL_BACKOFF_SEC * (2 ** attempt)
+                logger.warning(
+                    "Gemini API ServerError (attempt %d/%d), retrying in %ds: %s",
+                    attempt + 1, _MAX_RETRIES, wait, exc,
+                )
+                time.sleep(wait)
+            else:
+                logger.error("Gemini API failed after %d attempts", _MAX_RETRIES)
+                raise last_error
 
     data = json.loads(response.text)
     logger.info("Structured issue: %s", data.get("title"))
