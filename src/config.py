@@ -12,6 +12,7 @@ class Config:
     gemini_api_key: str
     gcp_project_id: str
     gemini_model: str = "gemini-2.5-pro"
+    gemini_selector_model: str = "gemini-2.5-flash"
     context_gcs_bucket: str = ""
     context_gcs_path: str = "llm_context.md"
     approver_slack_group: str = ""
@@ -27,6 +28,7 @@ def get_config() -> Config:
         gemini_api_key=os.environ["GEMINI_API_KEY"],
         gcp_project_id=os.environ["GCP_PROJECT_ID"],
         gemini_model=os.environ.get("GEMINI_MODEL", "gemini-2.5-pro"),
+        gemini_selector_model=os.environ.get("GEMINI_SELECTOR_MODEL", "gemini-2.5-flash"),
         context_gcs_bucket=os.environ.get("CONTEXT_GCS_BUCKET", ""),
         context_gcs_path=os.environ.get("CONTEXT_GCS_PATH", "llm_context.md"),
         approver_slack_group=os.environ.get("APPROVER_SLACK_GROUP", ""),
