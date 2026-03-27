@@ -263,13 +263,14 @@ def _select_relevant_files(
         config=types.GenerateContentConfig(
             system_instruction=SELECTOR_SYSTEM_PROMPT,
             temperature=0.0,
-            max_output_tokens=4096,
+            max_output_tokens=65536,
             response_mime_type="application/json",
             response_schema=SELECTOR_RESPONSE_SCHEMA,
         ),
     )
 
     data = json.loads(response.text)
+
     selected = data.get("selected_files", [])
     logger.info("Context selector: %d files selected", len(selected))
     return selected
